@@ -11,7 +11,7 @@ dname = os.path.dirname(abspath)
 os.chdir(dname)
 
 def data_import(path):
-    df = pd.read_csv(path, sep=";", nrows=1000) ### USTAWIC NA 50000 ###
+    df = pd.read_csv(path, sep=";", nrows=50000) ### USTAWIC NA 50000 ###
     df = df.drop("VarName", axis=1)
     df = df.drop("Validity", axis=1)
 
@@ -45,7 +45,25 @@ def import_chamber(number):
     p = p.rename(columns={"VarValue_x" : "particle_5", "VarValue_y" : "particle_0x5", "Time_ms_x" : "Time_ms"})
     p = p.drop("Time_ms_y", axis=1)
 
+    th["TimeString"] = pd.to_datetime(th["TimeString"], format=r"%d.%m.%Y %H:%M:%S")
+    p["TimeString"] = pd.to_datetime(p["TimeString"], format=r"%d.%m.%Y %H:%M:%S")
+
     RD = {"th" : th, "p" : p}
     return RD
 
-print(import_chamber(1))
+#Filtrowanie warunkiem
+K1 = import_chamber(1)
+th = K1["th"]
+
+print(th[(th["TimeString"] >= pd.Timestamp(2023, 7, 28, 10, 40))])
+
+class Day:
+    def __init__(self, start, stop):
+        self.start = start
+        self.stop = stop
+
+    def show(self, df):
+        return df[(df["TimeString"] >= self.start) & (df["TimeString"] <= self.stop)]
+    
+d1 = Day(pd.Timestamp(2023, 7, 28, 10, 40), pd.Timestamp(2023, 7, 28, 10, 43))
+d1.show(th)
