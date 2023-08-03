@@ -1,5 +1,5 @@
 import pandas as pd
-import os, re
+import os, re, pickle
 import time
 
 #ustawienie sciezki
@@ -11,16 +11,17 @@ name_list = ["temperature", "humidity", "particle_5", "particle_0x5"]
 #wczytanie nazw plikow z folderu pliki
 filenames = os.listdir('pliki/')
 
-def data_import(path):
-    df = pd.read_csv(path, sep=";", nrows=50000) ### USTAWIC NA 50000 ###
-    df = df.drop("VarName", axis=1)
-    df = df.drop("Validity", axis=1)
-
-    df = df[["TimeString", "Time_ms", "VarValue"]]
+#funkcja do wczytywania alarmow
+def alarms_import(path):
+    df = pd.read_csv(path, sep=";")
+    df = df[["TimeString", "Time_ms", "MsgNumber"]]
     return df
 
-
-
+#funkcja do importowania temperatury wilgotnosci i czastek
+def data_import(path):
+    df = pd.read_csv(path, sep=";", nrows=50000) ### USTAWIC NA 50000 ###
+    df = df[["TimeString", "Time_ms", "VarValue"]]
+    return df
 
 def get_dataframe(komora, data_type):
     pattern = re.compile(f"^k{komora}_{data_type}")
@@ -50,15 +51,13 @@ def import_chamber(number):
     RD = {"th" : th, "p" : p}
     return RD
 
-CHAMBERS = {1 : import_chamber(1), 2 : import_chamber(2), 3 : import_chamber(3), 4 : import_chamber(4)}
-
 class Day:
-    #TH 
-    def __init__(self, start, stop, active_chambers):
+    def __init__(self, start, stop, active_chambers, number=0):
+        self.number = number
         self.start = start
         self.stop = stop
         self.active_chambers = active_chambers
-        self.D = {}
+        self.K = {}
         self.get_all_data()
         self.analyze()
 
@@ -77,29 +76,69 @@ class Day:
 
     def get_all_data(self):
         for k in self.active_chambers:
-            self.D[k] = self.get_chamber(CHAMBERS[1])
-        return self.D
+            self.K[k] = self.get_chamber(CHAMBERS[k])
+        return self.K
 
     def chamber_analyze(self, n):
-        chamber = self.D[n]
+        chamber = self.K[n]
         S = {}
-        S["temp_max"] = max(chamber["th"]["Temperature"])
-        S["temp_min"] = min(chamber["th"]["Temperature"])
-        S["temp_mean"] = chamber["th"]["Temperature"].mean()
+        T = chamber["th"]["Temperature"]
+        H = chamber["th"]["Humidity"]
+        P = chamber["p"]["particle_5"]
+        p = chamber["p"]["particle_0x5"]
 
-        S["hum_max"] = max(chamber["th"]["Humidity"])
-        S["hum_min"] = min(chamber["th"]["Humidity"])
-        S["hum_mean"] = chamber["th"]["Humidity"].mean()
+        S["temp_max"] = max(T) if not T.empty else None
+        S["temp_min"] = min(T) if not T.empty  else None
+        S["temp_mean"] = T.mean() if not T.empty  else None
 
-        S["max_5"] = max(chamber["p"]["particle_5"])
-        S["max_0x5"] = max(chamber["p"]["particle_0x5"])
-        self.D[n]["analysis"] = S
+        S["hum_max"] = max(H) if not H.empty  else None
+        S["hum_min"] = min(H) if not H.empty  else None
+        S["hum_mean"] = H.mean() if not H.empty  else None
+
+        S["max_5"] = max(P) if not P.empty  else None
+        S["max_0x5"] = max(p) if not p.empty  else None
+        self.K[n]["analysis"] = S
         return S
 
     def analyze(self):
-        for k in self.D.keys():
+        for k in self.active_chambers:
             self.chamber_analyze(k)
 
-d1 = Day(pd.Timestamp(2023, 7, 14, 12, 25), pd.Timestamp(2023, 7, 14, 12, 55), [1, 2, 3, 4])
+#CHAMBERS = {1 : import_chamber(1), 2 : import_chamber(2), 3 : import_chamber(3), 4 : import_chamber(4)}
 
-print(d1.D)
+#d1 = Day(pd.Timestamp(2023, 7, 14, 14, 27), pd.Timestamp(2023, 7, 14, 15, 37), [1, 3])
+
+#pickle.dump(d1, open('day.txt', 'wb'))
+
+d1 = pickle.load(open('day.txt', 'rb'))
+
+def day_stats(day):
+    with open(f'{day.number}.txt', 'w') as f:
+        f.write(f'DZIEŃ {day.number}\n')
+        f.write(f'{day.start} - {day.stop}\n\n')
+        for k in day.active_chambers:
+            f.write(f'----------K{k}----------\n')
+            f.write(f'\nTEMPERATURA\n\n')
+            f.write(f'max : {day.K[k]["analysis"]["temp_max"]}\n')
+            f.write(f'min : {day.K[k]["analysis"]["temp_min"]}\n')
+            f.write(f'średnia : {day.K[k]["analysis"]["temp_mean"]}\n')
+
+            f.write(f'\nWILGOTNOŚĆ\n\n')
+            f.write(f'max : {day.K[k]["analysis"]["hum_max"]}\n')
+            f.write(f'min : {day.K[k]["analysis"]["hum_min"]}\n')
+            f.write(f'średnia : {day.K[k]["analysis"]["hum_mean"]}\n')
+
+            f.write(f'\nCZĄSTKI\n\n')
+            f.write(f'max 5 : {day.K[k]["analysis"]["max_5"]}\n')
+            f.write(f'max 0.5 : {day.K[k]["analysis"]["max_0x5"]}')
+
+            f.write("\n\n")
+
+def th2csv(day):
+    for k in day.active_chambers:
+        df = day.K[k]["th"]
+        df.to_csv(f'{day.number}_K{k}_temperatura_i_wilgotnosc.csv', sep=";")
+
+
+day_stats(d1)
+th2csv(d1)
