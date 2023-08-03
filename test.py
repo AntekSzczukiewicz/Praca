@@ -104,11 +104,11 @@ class Day:
         for k in self.active_chambers:
             self.chamber_analyze(k)
 
-#CHAMBERS = {1 : import_chamber(1), 2 : import_chamber(2), 3 : import_chamber(3), 4 : import_chamber(4)}
+CHAMBERS = {1 : import_chamber(1), 2 : import_chamber(2), 3 : import_chamber(3), 4 : import_chamber(4)}
 
-#d1 = Day(pd.Timestamp(2023, 7, 14, 14, 27), pd.Timestamp(2023, 7, 14, 15, 37), [1, 3])
+d1 = Day(pd.Timestamp(2023, 7, 14, 14, 27), pd.Timestamp(2023, 7, 14, 15, 37), [1, 3])
 
-#pickle.dump(d1, open('day.txt', 'wb'))
+pickle.dump(d1, open('day.txt', 'wb'))
 
 d1 = pickle.load(open('day.txt', 'rb'))
 
@@ -134,11 +134,19 @@ def day_stats(day):
 
             f.write("\n\n")
 
+#zapis temperatury i wilgotnosci
 def th2csv(day):
     for k in day.active_chambers:
         df = day.K[k]["th"]
         df.to_csv(f'{day.number}_K{k}_temperatura_i_wilgotnosc.csv', sep=";")
 
+#zapis czastek
+def p2csv(day):
+    for k in day.active_chambers:
+        df = day.K[k]["p"]
+        df.to_csv(f'{day.number}_K{k}_czastki.csv', sep=";")
+
 
 day_stats(d1)
 th2csv(d1)
+p2csv(d1)
