@@ -1,6 +1,5 @@
 import pandas as pd
-import os, re, pickle
-import time
+import os, re, pickle, tkinter
 
 #ustawienie sciezki
 abspath = os.path.abspath(__file__)
@@ -26,6 +25,7 @@ def data_import(path):
 def get_dataframe(komora, data_type):
     pattern = re.compile(f"^k{komora}_{data_type}")
     names = [name for name in filenames if pattern.match(name)]
+    print(names)
     dfs = [data_import(path = f"pliki/{name}") for name in names]
     if dfs:
         df = pd.concat(dfs, axis=0)
@@ -105,12 +105,13 @@ class Day:
             self.chamber_analyze(k)
 
 CHAMBERS = {1 : import_chamber(1), 2 : import_chamber(2), 3 : import_chamber(3), 4 : import_chamber(4)}
+print(CHAMBERS[3]["p"])
 
-d1 = Day(pd.Timestamp(2023, 7, 14, 14, 27), pd.Timestamp(2023, 7, 14, 15, 37), [1, 3])
+d1 = Day(pd.Timestamp(2023, 6, 30, 11, 47), pd.Timestamp(2023, 6, 30, 12, 42), [1, 3])
 
-pickle.dump(d1, open('day.txt', 'wb'))
+#pickle.dump(d1, open('day.txt', 'wb'))
 
-d1 = pickle.load(open('day.txt', 'rb'))
+#d1 = pickle.load(open('day.txt', 'rb'))
 
 def day_stats(day):
     with open(f'{day.number}.txt', 'w') as f:
