@@ -1,27 +1,27 @@
 import tkinter as tk
 from tkcalendar import DateEntry
-
+DAY_NUMBERS = [0, 3, 5, 7, 10]
 #Nazwa kampani - campain_name
 
 class App(tk.Tk):
-    def __init__(self):
+    def __init__(self, command):
         super().__init__()
         #self.geometry("500x500")
-        self.day_nums = [0, 3, 5, 7, 10]
+        self.generate_command = command
+        self.day_nums = DAY_NUMBERS
         self.DAY = {}
         self.set_things()
         self.title("Generator raportu")
         self.resizable(False, False)
-        
 
     def set_things(self):
         days_grid = tk.Frame(self)
         self.set_title()
+        self.set_product_name()
         for i in self.day_nums:
             self.set_day(i, days_grid, i)
         days_grid.pack(side=tk.LEFT, padx=10, pady=10)
         self.set_confirm_button()
-        
 
     def set_title(self):
         frame = tk.Frame(self)
@@ -29,6 +29,14 @@ class App(tk.Tk):
         label.pack(side=tk.LEFT, padx=10)
         self.title_field = tk.Entry(frame, width=40, font=("Arial", 12))
         self.title_field.pack(side=tk.RIGHT, padx=10)
+        frame.pack(pady=10)
+
+    def set_product_name(self):
+        frame = tk.Frame(self)
+        label = tk.Label(frame, text="Nazwa produktu:")
+        label.pack(side=tk.LEFT, padx=10)
+        self.product_name_field = tk.Entry(frame, width=40, font=("Arial", 12))
+        self.product_name_field.pack(side=tk.RIGHT, padx=10)
         frame.pack(pady=10)
 
     def set_day(self, number, days_grid, row):
@@ -68,7 +76,7 @@ class App(tk.Tk):
 
 
     def set_confirm_button(self):
-        self.confirm_button = tk.Button(self, text="Generuj", command=self.get)
+        self.confirm_button = tk.Button(self, text="Generuj", command=self.generate)
         self.confirm_button.pack(side=tk.BOTTOM, anchor=tk.SE, padx=10, pady=10)
 
     def get_day(self, number):
@@ -77,15 +85,15 @@ class App(tk.Tk):
         
         #data
         date = day.date.get_date()
-        DATA["Y"] = date.year
-        DATA["m"] = date.month
-        DATA["d"] = date.day
+        DATA["Y"] = int(date.year)
+        DATA["m"] = int(date.month)
+        DATA["d"] = int(date.day)
 
         #godziny
-        DATA["start_h"] = day.start_h.get()
-        DATA["start_m"] = day.start_m.get()
-        DATA["stop_h"] = day.stop_h.get()
-        DATA["stop_m"] = day.stop_m.get()
+        DATA["start_h"] = int(day.start_h.get())
+        DATA["start_m"] = int(day.start_m.get())
+        DATA["stop_h"] = int(day.stop_h.get())
+        DATA["stop_m"] = int(day.stop_m.get())
 
         #komory
         DATA["chambers"] = []
@@ -101,7 +109,11 @@ class App(tk.Tk):
             self.DATA[n] = self.get_day(n)
 
         self.DATA["campain_name"] = self.title_field.get()
-        print(self.DATA)
+        self.DATA["product_name"] = self.product_name_field.get()
+
+    def generate(self):
+        self.get()
+        self.generate_command(self.DATA)
             
 
 
@@ -119,6 +131,3 @@ class IDay():
         #self.Chambers = {1 : tk.IntVar(), 2 : tk.IntVar(), 3 : tk.IntVar(), 4 : tk.IntVar()}
         self.Chambers = {i : tk.IntVar() for i in [1, 2, 3, 4]}
         self.Chamber_button = {i : tk.Checkbutton(frame, text=f"K{i}", variable=self.Chambers[i]) for i in [1, 2, 3, 4]}
-
-app = App()
-app.mainloop()
