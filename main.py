@@ -18,17 +18,27 @@ def create_folder(data):
     [os.mkdir(s + f'\{i}') for i in DAY_NUMBERS]
     return s
 
+def paste_templates(dst):
+    path = 'szablony'
+    names = os.listdir(path)
+    for name in names:
+        for n in DAY_NUMBERS:
+            shutil.copy(f'{path}/{name}', f'{dst}/{n}')
+
 def generate(data):
     path = create_folder(data)
+    paste_templates(path)
     for i in DAY_NUMBERS:
         d = create_day_obj(data[i], i)
-        #p2csv(d, f"{path}/{d.number}")
-        p2excel(d, f"{path}/{d.number}")
-        #th2csv(d, f"{path}/{d.number}")
-        th2excel(d, f"{path}/{d.number}")
-        #a2csv(d, f"{path}/{d.number}")
-        a2excel(d, f"{path}/{d.number}")
-        day_stats(d, f"{path}/{d.number}")
+        for k in d.active_chambers:
+            th = d.K[k]['th']
+
+            with xw.App(visible=False) as a:
+                wb = a.books.open(f'{path}/{d.number}/szablon_dnia.xlsx')
+                wb.sheets(f'TW{k}').range('A1').value = th
+                wb.save()
+
+    #    day2excel_template(d)
 
 CHAMBERS = import_chambers()
 ALARMS = alarms_dataframe()

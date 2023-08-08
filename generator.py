@@ -1,5 +1,6 @@
 import pandas as pd
-import os, re, pickle, tkinter, openpyxl
+import os, re, pickle, tkinter, openpyxl, shutil
+import xlwings as xw
 
 #ustawienie sciezki
 abspath = os.path.abspath(__file__)
@@ -172,6 +173,13 @@ def a2csv(day, path):
 def a2excel(day, path):
     df = day.a
     df.to_excel(f'{path}/{day.number}_alarmy.xlsx')
+
+
+def day2excel_template(day):
+    with xw.App(visible=False) as a:
+        wb = a.books.open('Szablon.xlsx')
+        
+        wb.save()
 
 
 def import_chambers():
