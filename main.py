@@ -28,17 +28,42 @@ def paste_templates(dst):
 def generate(data):
     path = create_folder(data)
     paste_templates(path)
+    print('GENEROWANIE')
     for i in DAY_NUMBERS:
         d = create_day_obj(data[i], i)
-        for k in d.active_chambers:
-            th = d.K[k]['th']
+        with xw.App(visible=False) as a:
+            wb = a.books.open(f'{path}/{d.number}/szablon_dnia.xlsx')
+            print(f'    DZIEN {i}')
+            a = d.K['a']
+            write_data(a, wb, f'ALARMY', data['campain_name'], data['product_name'])
+            for k in d.active_chambers:
+                print(f'        KOMORA {k}')
 
-            with xw.App(visible=False) as a:
-                wb = a.books.open(f'{path}/{d.number}/szablon_dnia.xlsx')
-                wb.sheets(f'TW{k}').range('A1').value = th
-                wb.save()
+                th = d.K[k]['th']
+                p = d.K[k]['p']
+
+                write_data(th, wb, f'TW{k}', data['campain_name'], data['product_name'])
+                write_data(p, wb, f'K{k}', data['campain_name'], data['product_name'])
+
+                #wb.sheets(f'TW{k}').range('A3').value = th
+                #wb.sheets(f'TW{k}').range('B1').value = data['campain_name']
+                #wb.sheets(f'TW{k}').range('B2').value = data['product_name']
+#
+                #wb.sheets(f'K{k}').range('A3').value = p
+                #wb.sheets(f'K{k}').range('B1').value = data['campain_name']
+                #wb.sheets(f'K{k}').range('B2').value = data['product_name']
+
+            wb.save()
+
+    print('ZAKONCZONO')
 
     #    day2excel_template(d)
+
+def write_data(df, file, sheet, campain_name, product_name, data_cell='A3', campain_field='B1', product_field='B2'):
+    file.sheets(sheet).range(data_cell).value = df
+    file.sheets(sheet).range(campain_field).value = campain_name
+    file.sheets(sheet).range(product_field).value = product_name
+
 
 CHAMBERS = import_chambers()
 ALARMS = alarms_dataframe()

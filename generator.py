@@ -26,6 +26,9 @@ def alarms_dataframe():
         df["TimeString"] = pd.to_datetime(df["TimeString"], format=r"%d.%m.%Y %H:%M:%S")
         return df
     return pd.DataFrame()
+
+def incubation_import(path):
+    df = pd.read_csv(path, sep=";")
     
 
 #funkcja do importowania temperatury wilgotnosci i czastek
@@ -78,14 +81,17 @@ class Day:
         self.th = df[(df["TimeString"] >= self.start) & (df["TimeString"] <= self.stop)]
         self.th.loc[:, "Temperature"] = self.th["Temperature"].apply(lambda x : float(x.replace(",", ".")))
         self.th.loc[:, "Humidity"] = self.th["Humidity"].apply(lambda x : float(x.replace(",", ".")))
+        self.th.loc[:, "Time_ms"] = self.th["Time_ms"].apply(lambda x : float(x.replace(",", ".")))
         return self.th
 
     def get_p(self, df):
         self.p = df[(df["TimeString"] >= self.start) & (df["TimeString"] <= self.stop)]
+        self.p.loc[:, "Time_ms"] = self.p["Time_ms"].apply(lambda x : float(x.replace(",", ".")))
         return self.p
     
     def get_a(self):
         self.a = self.alarms[(self.alarms["TimeString"] >= self.start) & (self.alarms["TimeString"] <= self.stop)]
+        self.a.loc[:, "Time_ms"] = self.a["Time_ms"].apply(lambda x : float(x.replace(",", ".")))
         return self.a
 
     def get_chamber(self, K):
@@ -144,6 +150,10 @@ def day_stats(day, path):
 
             f.write("\n\n")
 
+def convert_time_ms(value):
+    f = str(int(float(value.replace(",", "."))))
+    return f
+
 #zapis temperatury i wilgotnosci
 def th2csv(day, path):
     for k in day.active_chambers:
@@ -183,5 +193,9 @@ def day2excel_template(day):
 
 
 def import_chambers():
-    C = {i : import_chamber(i) for i in [1, 2, 3, 4]}
+    C = {}
+    print('IMPORTUJE')
+    for i in [1, 2, 3, 4]:
+        print(f'    KOMORA {i}')
+        C[i] = import_chamber(i)
     return C
