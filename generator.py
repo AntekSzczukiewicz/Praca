@@ -184,13 +184,10 @@ def a2excel(day, path):
     df = day.a
     df.to_excel(f'{path}/{day.number}_alarmy.xlsx')
 
-
 def day2excel_template(day):
     with xw.App(visible=False) as a:
-        wb = a.books.open('Szablon.xlsx')
-        
+        wb = a.books.open('Szablon.xlsx')      
         wb.save()
-
 
 def import_chambers():
     C = {}

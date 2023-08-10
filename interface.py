@@ -1,27 +1,31 @@
 import tkinter as tk
 from tkcalendar import DateEntry
-DAY_NUMBERS = [0, 3, 6, 9, 13, 14]
-#Nazwa kampani - campain_name
+
+def counter():
+    i = 1
+    while True:
+        yield i
+        i += 1
 
 class App(tk.Tk):
     def __init__(self, command):
         super().__init__()
         #self.geometry("500x500")
+        self.counter = counter()
         self.generate_command = command
-        self.day_nums = DAY_NUMBERS
-        self.DAY = {}
+        self.DAYS = []
         self.set_things()
         self.title("Generator raportu")
         self.resizable(False, False)
 
     def set_things(self):
-        days_grid = tk.Frame(self)
+        self.days_grid = tk.Frame(self)
         self.set_title()
         self.set_product_name()
-        for i in self.day_nums:
-            self.set_day(i, days_grid, i)
-        days_grid.pack(side=tk.LEFT, padx=10, pady=10)
         self.set_confirm_button()
+        self.set_add_day_button()
+        self.days_grid.pack(side=tk.LEFT, padx=10, pady=10)
+        
 
     def set_title(self):
         frame = tk.Frame(self)
@@ -39,14 +43,18 @@ class App(tk.Tk):
         self.product_name_field.pack(side=tk.RIGHT, padx=10)
         frame.pack(pady=10)
 
-    def set_day(self, number, days_grid, row):
-        frame = tk.Frame(days_grid)
-        day = IDay(frame, number)
-        self.DAY[number] = day
+    def set_day(self):
+
+        row = next(self.counter)
+
+        frame = tk.Frame(self.days_grid)
+        day = IDay(frame)
+        self.DAYS.append(day)
 
         #numer dnia
-        title = tk.Label(frame, text=f"Dzień {day.number}")
+        title = tk.Label(frame, text=f"Dzień")
         title.grid(row=0, column=0, sticky="W")
+        day.number.grid(row=0, column=1, sticky="W")
 
         #daty
         label_date = tk.Label(frame, text="Data:")
@@ -73,18 +81,22 @@ class App(tk.Tk):
         day.Chamber_button[3].grid(row=1, column=10)
         day.Chamber_button[4].grid(row=1, column=11)
 
+        print(self.DAYS)
+
     def set_confirm_button(self):
         self.confirm_button = tk.Button(self, text="Generuj", command=self.generate)
         self.confirm_button.pack(side=tk.BOTTOM, anchor=tk.SE, padx=10, pady=10)
 
     def set_add_day_button(self):
-        self.confirm_button = tk.Button(self, text="Dodaj dzień", command=self.generate)
+        self.confirm_button = tk.Button(self, text="Dodaj dzień", command=self.set_day)
         self.confirm_button.pack(side=tk.BOTTOM, padx=10, pady=10)
 
-    def get_day(self, number):
-        day = self.DAY[number]
+    def get_day(self, day):
         DATA = {}
         
+        #numer
+        DATA['number'] = day.number.get()
+
         #data
         date = day.date.get_date()
         DATA["Y"] = int(date.year)
@@ -106,12 +118,17 @@ class App(tk.Tk):
         return DATA
 
     def get(self):
-        self.DATA = {}
-        for n in self.day_nums:
-            self.DATA[n] = self.get_day(n)
+        self.DATA = {'days' : {}}
+        for day in self.DAYS:
+            data = self.get_day(day)
+            self.DATA['days'][int(data['number'])] = data 
 
         self.DATA["campain_name"] = self.title_field.get()
         self.DATA["product_name"] = self.product_name_field.get()
+        
+        day_nums = list(self.DATA["days"].keys())
+        day_nums.sort()
+        self.DATA['day_numbers'] = day_nums
 
     def generate(self):
         self.get()
@@ -120,9 +137,9 @@ class App(tk.Tk):
 
 
 class IDay():
-    def __init__(self, frame, number):
+    def __init__(self, frame):
         self.frame = frame
-        self.number = number
+        self.number = tk.Spinbox(frame, from_=0, to=23, wrap=True, width=2)
         self.date = DateEntry(frame, date_pattern='dd-mm-yyyy')
         self.start_h = tk.Spinbox(frame, from_=0, to=23, wrap=True, width=2)
         self.start_m = tk.Spinbox(frame, from_=0, to=59, wrap=True, width=2)

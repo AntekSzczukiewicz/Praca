@@ -15,21 +15,21 @@ def create_folder(data):
     while os.path.isdir(s):
         s += '_'
     os.mkdir(s)
-    [os.mkdir(s + f'\{i}') for i in DAY_NUMBERS]
+    [os.mkdir(s + f'\{i}') for i in data["day_numbers"]]
     return s
 
-def paste_templates(dst):
+def paste_templates(dst, day_numbers):
     path = 'szablony/szablon_dnia.xlsx'
-    for n in DAY_NUMBERS:
+    for n in day_numbers:
         shutil.copy(f'{path}', f'{dst}/{n}')
         os.rename(f'{dst}/{n}/szablon_dnia.xlsx', f'{dst}/{n}/{n}.xlsx')
 
 def generate(data):
     path = create_folder(data)
-    paste_templates(path)
+    paste_templates(path, data['day_numbers'])
     print('GENEROWANIE')
-    for i in DAY_NUMBERS:
-        d = create_day_obj(data[i], i)
+    for i in data["day_numbers"]:
+        d = create_day_obj(data['days'][i], i)
         with xw.App(visible=False) as a:
             wb = a.books.open(f'{path}/{d.number}/{d.number}.xlsx')
             print(f'    DZIEN {i}')
