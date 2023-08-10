@@ -13,7 +13,7 @@ filenames = os.listdir('pliki/')
 
 #funkcja do wczytywania alarmow
 def alarms_import(path):
-    df = pd.read_csv(path, sep=";")
+    df = pd.read_csv(path, sep=";", index_col=False)
     df = df[["TimeString", "Time_ms", "MsgNumber"]]
     return df
 
@@ -28,12 +28,12 @@ def alarms_dataframe():
     return pd.DataFrame()
 
 def incubation_import(path):
-    df = pd.read_csv(path, sep=";")
+    df = pd.read_csv(path, sep=";", index_col=False)
     
 
 #funkcja do importowania temperatury wilgotnosci i czastek
 def data_import(path):
-    df = pd.read_csv(path, sep=";", nrows=50000) ### USTAWIC NA 50000 ###
+    df = pd.read_csv(path, sep=";", nrows=50000, index_col=False) ### USTAWIC NA 50000 ###
     df = df[["TimeString", "Time_ms", "VarValue"]]
     return df
 

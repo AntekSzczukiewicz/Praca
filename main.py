@@ -19,11 +19,10 @@ def create_folder(data):
     return s
 
 def paste_templates(dst):
-    path = 'szablony'
-    names = os.listdir(path)
-    for name in names:
-        for n in DAY_NUMBERS:
-            shutil.copy(f'{path}/{name}', f'{dst}/{n}')
+    path = 'szablony/szablon_dnia.xlsx'
+    for n in DAY_NUMBERS:
+        shutil.copy(f'{path}', f'{dst}/{n}')
+        os.rename(f'{dst}/{n}/szablon_dnia.xlsx', f'{dst}/{n}/{n}.xlsx')
 
 def generate(data):
     path = create_folder(data)
@@ -32,26 +31,18 @@ def generate(data):
     for i in DAY_NUMBERS:
         d = create_day_obj(data[i], i)
         with xw.App(visible=False) as a:
-            wb = a.books.open(f'{path}/{d.number}/szablon_dnia.xlsx')
+            wb = a.books.open(f'{path}/{d.number}/{d.number}.xlsx')
             print(f'    DZIEN {i}')
             a = d.K['a']
-            write_data(a, wb, f'ALARMY', data['campain_name'], data['product_name'])
+            write_data(a, wb, f'ALARMY', data['campain_name'], data_cell="B2", campain_field='D1')
             for k in d.active_chambers:
                 print(f'        KOMORA {k}')
 
                 th = d.K[k]['th']
                 p = d.K[k]['p']
 
-                write_data(th, wb, f'TW{k}', data['campain_name'], data['product_name'])
-                write_data(p, wb, f'K{k}', data['campain_name'], data['product_name'])
-
-                #wb.sheets(f'TW{k}').range('A3').value = th
-                #wb.sheets(f'TW{k}').range('B1').value = data['campain_name']
-                #wb.sheets(f'TW{k}').range('B2').value = data['product_name']
-#
-                #wb.sheets(f'K{k}').range('A3').value = p
-                #wb.sheets(f'K{k}').range('B1').value = data['campain_name']
-                #wb.sheets(f'K{k}').range('B2').value = data['product_name']
+                write_data(th, wb, f'Temp i wilg K{k}', data['campain_name'], chamber=k)
+                write_data(p, wb, f'K{k}', data['campain_name'], chamber=k)
 
             wb.save()
 
@@ -59,10 +50,12 @@ def generate(data):
 
     #    day2excel_template(d)
 
-def write_data(df, file, sheet, campain_name, product_name, data_cell='A3', campain_field='B1', product_field='B2'):
+def write_data(df, file, sheet, campain_name, chamber=None, data_cell='A1', campain_field='J1', chamber_field='G1'):
     file.sheets(sheet).range(data_cell).value = df
     file.sheets(sheet).range(campain_field).value = campain_name
-    file.sheets(sheet).range(product_field).value = product_name
+    if chamber:
+        file.sheets(sheet).range(chamber_field).value = f'K{chamber}'
+
 
 
 CHAMBERS = import_chambers()

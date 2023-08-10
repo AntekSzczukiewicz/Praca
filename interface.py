@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkcalendar import DateEntry
-DAY_NUMBERS = [0, 3, 5, 7, 10]
+DAY_NUMBERS = [0, 3, 6, 9, 13, 14]
 #Nazwa kampani - campain_name
 
 class App(tk.Tk):
@@ -73,11 +73,13 @@ class App(tk.Tk):
         day.Chamber_button[3].grid(row=1, column=10)
         day.Chamber_button[4].grid(row=1, column=11)
 
-
-
     def set_confirm_button(self):
         self.confirm_button = tk.Button(self, text="Generuj", command=self.generate)
         self.confirm_button.pack(side=tk.BOTTOM, anchor=tk.SE, padx=10, pady=10)
+
+    def set_add_day_button(self):
+        self.confirm_button = tk.Button(self, text="Dodaj dzień", command=self.generate)
+        self.confirm_button.pack(side=tk.BOTTOM, padx=10, pady=10)
 
     def get_day(self, number):
         day = self.DAY[number]
@@ -128,6 +130,5 @@ class IDay():
         self.stop_h = tk.Spinbox(frame, from_=0, to=23, wrap=True, width=2)
         self.stop_m = tk.Spinbox(frame, from_=0, to=59, wrap=True, width=2)
 
-        #self.Chambers = {1 : tk.IntVar(), 2 : tk.IntVar(), 3 : tk.IntVar(), 4 : tk.IntVar()}
         self.Chambers = {i : tk.IntVar() for i in [1, 2, 3, 4]}
         self.Chamber_button = {i : tk.Checkbutton(frame, text=f"K{i}", variable=self.Chambers[i]) for i in [1, 2, 3, 4]}
