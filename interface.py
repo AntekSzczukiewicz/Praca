@@ -25,7 +25,12 @@ class App(tk.Tk):
         self.set_confirm_button()
         self.set_add_day_button()
         self.days_grid.pack(side=tk.LEFT, padx=10, pady=10)
-        
+    
+    def set_info_label(self):
+        self.info = tk.StringVar()
+        self.info.set('test')
+        self.info_label = tk.Label(self, textvariable=self.info)
+        self.info_label.pack(side=tk.BOTTOM, pady=10)
 
     def set_title(self):
         frame = tk.Frame(self)
@@ -80,8 +85,6 @@ class App(tk.Tk):
         day.Chamber_button[2].grid(row=1, column=9)
         day.Chamber_button[3].grid(row=1, column=10)
         day.Chamber_button[4].grid(row=1, column=11)
-
-        print(self.DAYS)
 
     def set_confirm_button(self):
         self.confirm_button = tk.Button(self, text="Generuj", command=self.generate)
@@ -149,3 +152,4 @@ class IDay():
 
         self.Chambers = {i : tk.IntVar() for i in [1, 2, 3, 4]}
         self.Chamber_button = {i : tk.Checkbutton(frame, text=f"K{i}", variable=self.Chambers[i]) for i in [1, 2, 3, 4]}
+
