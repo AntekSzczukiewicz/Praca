@@ -39,15 +39,25 @@ def generate(data):
             wb = a.books.open(f'{path}/{d.number}/{d.number}.xlsx')
             print(f'    DZIEN {i}')
             a = d.K['a']
+            a = a.rename(columns={'MsgNumber' : 'Nr alarmu'})
             write_data(a, wb, f'ALARMY', data['campain_name'], data_cell="B2", campain_field='D1')
+            if i:
+                i = d.K['i']
+                i = i.rename(columns={i.columns.values[0] : 'Data i godzina', i.columns.values[1] : 'Temp', i.columns.values[2] : 'CO2'})
+            #    i.columns.values[0] = 'Data i godzina'
+            #    i.columns.values[1] = 'Temp'
+            #    i.columns.values[2] = 'CO2'
 
-            i = d.K['i']
-            write_data(i, wb, f'INKUBACJA', data['campain_name'], data_cell="A3", campain_field='C1')
+                write_data(i, wb, f'INKUBACJA', data['campain_name'], data_cell="A3", campain_field='C1')
             for k in d.active_chambers:
                 print(f'        KOMORA {k}')
 
                 th = d.K[k]['th']
+                th = th.rename(columns={'TimeString' : 'Data i godzina', 'Temperature' : 'Temperatura', 'Humidity' : 'Wilgotność'})
+                
                 p = d.K[k]['p']
+                p = p.rename(columns={'TimeString' : 'Data i godzina', 'particle_5' : 'Cząstki 5um', 'particle_0x5' : 'Cząstki 0,5um'})
+                
 
                 write_data(th, wb, f'Temp i wilg K{k}', data['campain_name'], chamber=k)
                 write_data(p, wb, f'K{k}', data['campain_name'], chamber=k)
