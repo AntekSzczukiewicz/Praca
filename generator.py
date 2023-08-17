@@ -27,8 +27,10 @@ def alarms_dataframe():
         return df
     return pd.DataFrame()
 
-def incubation_import(path):
-    df = pd.read_csv(path, sep=";", index_col=False)
+def incubation_import():
+    df = pd.read_csv('pliki/incubation.csv', sep=";", index_col=False, skiprows=1, encoding='latin')
+    df["Czas[YY-MM-DD hh:mm]"] = pd.to_datetime(df["Czas[YY-MM-DD hh:mm]"], format=r"%Y-%m-%d %H:%M:%S")
+    return df
     
 
 #funkcja do importowania temperatury wilgotnosci i czastek
@@ -66,16 +68,18 @@ def import_chamber(number):
     return RD
 
 class Day:
-    def __init__(self, start, stop, active_chambers, CHAMBERS, alarms, number=0):
+    def __init__(self, start, stop, active_chambers, CHAMBERS, alarms, incubation, number=0):
         self.CHAMBERS = CHAMBERS
         self.alarms = alarms
+        self.incubation = incubation
         self.number = number
         self.start = start
         self.stop = stop
+        self.incubation_start = None
         self.active_chambers = active_chambers
         self.K = {}
-        self.get_all_data()
-        self.analyze()
+        #self.get_all_data()
+        #self.analyze()
 
     def get_th(self, df):
         self.th = df[(df["TimeString"] >= self.start) & (df["TimeString"] <= self.stop)]
@@ -93,6 +97,12 @@ class Day:
         self.a = self.alarms[(self.alarms["TimeString"] >= self.start) & (self.alarms["TimeString"] <= self.stop)]
         self.a.loc[:, "Time_ms"] = self.a["Time_ms"].apply(lambda x : float(x.replace(",", ".")))
         return self.a
+    
+    def get_i(self):
+        if self.incubation_start:
+            self.i = self.incubation[(self.incubation["Czas[YY-MM-DD hh:mm]"] >= self.incubation_start) & (self.incubation["Czas[YY-MM-DD hh:mm]"] <= self.start)]
+            return self.i
+        return None
 
     def get_chamber(self, K):
         return {"th" : self.get_th(K["th"]), "p" : self.get_p(K["p"])}
@@ -101,6 +111,7 @@ class Day:
         for k in self.active_chambers:
             self.K[k] = self.get_chamber(self.CHAMBERS[k])
         self.K["a"] = self.get_a()
+        self.K["i"] = self.get_i()
         return self.K
 
     def chamber_analyze(self, n):
@@ -196,3 +207,11 @@ def import_chambers():
         print(f'    KOMORA {i}')
         C[i] = import_chamber(i)
     return C
+
+def import_all():
+    C = import_chambers()
+    print('    ALARMY')
+    A = alarms_dataframe()
+    print('    INKUBACJA')
+    I = incubation_import()
+    return {'Chambers' : C, 'Alarms': A, 'Incubation' : I}

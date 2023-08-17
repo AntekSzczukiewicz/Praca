@@ -5,7 +5,7 @@ def create_day_obj(data, n):
     Y = data["Y"]
     m = data["m"]
     d = data["d"]
-    d = Day(pd.Timestamp(Y, m, d, data["start_h"], data["start_m"]), pd.Timestamp(Y, m, d, data["stop_h"], data["stop_m"]), data["chambers"], CHAMBERS, ALARMS, number=n)
+    d = Day(pd.Timestamp(Y, m, d, data["start_h"], data["start_m"]), pd.Timestamp(Y, m, d, data["stop_h"], data["stop_m"]), data["chambers"], CHAMBERS, ALARMS, INCUBATION, number=n)
     return d
 
 def create_folder(data):
@@ -28,13 +28,21 @@ def generate(data):
     path = create_folder(data)
     paste_templates(path, data['day_numbers'])
     print('GENEROWANIE')
+    last = None
     for i in data["day_numbers"]:
         d = create_day_obj(data['days'][i], i)
+        if last:
+            d.incubation_start = last.stop
+        
+        d.get_all_data()
         with xw.App(visible=False) as a:
             wb = a.books.open(f'{path}/{d.number}/{d.number}.xlsx')
             print(f'    DZIEN {i}')
             a = d.K['a']
             write_data(a, wb, f'ALARMY', data['campain_name'], data_cell="B2", campain_field='D1')
+
+            i = d.K['i']
+            write_data(i, wb, f'INKUBACJA', data['campain_name'], data_cell="A3", campain_field='C1')
             for k in d.active_chambers:
                 print(f'        KOMORA {k}')
 
@@ -45,6 +53,7 @@ def generate(data):
                 write_data(p, wb, f'K{k}', data['campain_name'], chamber=k)
 
             wb.save()
+            last = d
 
     print('ZAKONCZONO')
 
@@ -57,8 +66,10 @@ def write_data(df, file, sheet, campain_name, chamber=None, data_cell='A1', camp
         file.sheets(sheet).range(chamber_field).value = f'K{chamber}'
 
 
+D = import_all()
+CHAMBERS = D['Chambers']
+ALARMS = D['Alarms']
+INCUBATION = D['Incubation']
 
-CHAMBERS = import_chambers()
-ALARMS = alarms_dataframe()
 app = App(generate)
 app.mainloop()
