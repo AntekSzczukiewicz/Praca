@@ -32,7 +32,7 @@ def generate(data):
     for i in data["day_numbers"]:
         d = create_day_obj(data['days'][i], i)
         if last:
-            d.incubation_start = last.stop
+            d.incubation_start = last.stop - pd.Timedelta(minutes=15)
         
         d.get_all_data()
         with xw.App(visible=False) as a:
@@ -40,7 +40,7 @@ def generate(data):
             print(f'    DZIEN {i}')
             a = d.K['a']
             a = a.rename(columns={'MsgNumber' : 'Nr alarmu'})
-            write_data(a, wb, f'ALARMY', data['campain_name'], data_cell="B2", campain_field='D1')
+            write_data(a, wb, f'ALARMY', data['campain_name'], data_cell="A2", campain_field='D1')
             if i:
                 i = d.K['i']
                 i = i.rename(columns={i.columns.values[0] : 'Data i godzina', i.columns.values[1] : 'Temp', i.columns.values[2] : 'CO2'})

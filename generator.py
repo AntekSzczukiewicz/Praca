@@ -75,6 +75,7 @@ class Day:
         self.number = number
         self.start = start
         self.stop = stop
+        self.incubation_end = self.start + pd.Timedelta(minutes=15)
         self.incubation_start = None
         self.active_chambers = active_chambers
         self.K = {}
@@ -100,7 +101,7 @@ class Day:
     
     def get_i(self):
         if self.incubation_start:
-            self.i = self.incubation[(self.incubation["Czas[YY-MM-DD hh:mm]"] >= self.incubation_start) & (self.incubation["Czas[YY-MM-DD hh:mm]"] <= self.start)]
+            self.i = self.incubation[(self.incubation["Czas[YY-MM-DD hh:mm]"] >= self.incubation_start) & (self.incubation["Czas[YY-MM-DD hh:mm]"] <= self.incubation_end)]
             return self.i
         return None
 
