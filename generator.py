@@ -7,9 +7,13 @@ abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
 
+filepath = dname + '\pliki'
+
+print(filepath)
+
 name_list = ["temperature", "humidity", "particle_5", "particle_0x5"]
 #wczytanie nazw plikow z folderu pliki
-filenames = os.listdir('pliki/')
+filenames = os.listdir(filepath)
 
 #funkcja do wczytywania alarmow
 def alarms_import(path):
@@ -20,7 +24,7 @@ def alarms_import(path):
 def alarms_dataframe():
     pattern = re.compile(f"^Alarm_log")
     names = [name for name in filenames if pattern.match(name)]
-    dfs = [alarms_import(path = f"pliki/{name}") for name in names]
+    dfs = [alarms_import(path = f"{filepath}/{name}") for name in names]
     if dfs:
         df = pd.concat(dfs, axis=0)
         df["TimeString"] = pd.to_datetime(df["TimeString"], format=r"%d.%m.%Y %H:%M:%S")
@@ -28,8 +32,8 @@ def alarms_dataframe():
     return pd.DataFrame()
 
 def incubation_import():
-    df = pd.read_csv('pliki/incubation.csv', sep=";", index_col=False, skiprows=1, encoding='latin')
-    df["Czas[YY-MM-DD hh:mm]"] = pd.to_datetime(df["Czas[YY-MM-DD hh:mm]"], format=r"%Y-%m-%d %H:%M:%S")
+    df = pd.read_csv(f'{filepath}/incubation.csv', sep=";", index_col=False, skiprows=1, encoding='latin')
+    df["Czas[YY-MM-DD hh:mm]"] = pd.to_datetime(df["Czas[YY-MM-DD hh:mm]"], format='mixed')
     return df
     
 
@@ -42,7 +46,7 @@ def data_import(path):
 def get_dataframe(komora, data_type):
     pattern = re.compile(f"^k{komora}_{data_type}")
     names = [name for name in filenames if pattern.match(name)]
-    dfs = [data_import(path = f"pliki/{name}") for name in names]
+    dfs = [data_import(path = f"{filepath}/{name}") for name in names]
     if dfs:
         df = pd.concat(dfs, axis=0)
         return df
@@ -75,7 +79,7 @@ class Day:
         self.number = number
         self.start = start
         self.stop = stop
-        self.incubation_end = self.start + pd.Timedelta(minutes=15)
+        self.incubation_end = self.start
         self.incubation_start = None
         self.active_chambers = active_chambers
         self.K = {}
@@ -83,19 +87,19 @@ class Day:
         #self.analyze()
 
     def get_th(self, df):
-        self.th = df[(df["TimeString"] >= self.start) & (df["TimeString"] <= self.stop)]
+        self.th = df[(df["TimeString"] >= self.start - pd.Timedelta(minutes=15)) & (df["TimeString"] <= self.stop + pd.Timedelta(minutes=15))]
         self.th.loc[:, "Temperature"] = self.th["Temperature"].apply(lambda x : float(x.replace(",", ".")))
         self.th.loc[:, "Humidity"] = self.th["Humidity"].apply(lambda x : float(x.replace(",", ".")))
         self.th.loc[:, "Time_ms"] = self.th["Time_ms"].apply(lambda x : float(x.replace(",", ".")))
         return self.th
 
     def get_p(self, df):
-        self.p = df[(df["TimeString"] >= self.start) & (df["TimeString"] <= self.stop)]
+        self.p = df[(df["TimeString"] >= self.start - pd.Timedelta(minutes=15)) & (df["TimeString"] <= self.stop + pd.Timedelta(minutes=15))]
         self.p.loc[:, "Time_ms"] = self.p["Time_ms"].apply(lambda x : float(x.replace(",", ".")))
         return self.p
     
     def get_a(self):
-        self.a = self.alarms[(self.alarms["TimeString"] >= self.start) & (self.alarms["TimeString"] <= self.stop)]
+        self.a = self.alarms[(self.alarms["TimeString"] >= self.start - pd.Timedelta(minutes=15)) & (self.alarms["TimeString"] <= self.stop + pd.Timedelta(minutes=15))]
         self.a.loc[:, "Time_ms"] = self.a["Time_ms"].apply(lambda x : float(x.replace(",", ".")))
         return self.a
     

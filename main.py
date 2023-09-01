@@ -1,6 +1,8 @@
 from interface import *
 from generator import *
 
+templatepath = dname + '\szablony'
+
 def create_day_obj(data, n):
     Y = data["Y"]
     m = data["m"]
@@ -19,10 +21,10 @@ def create_folder(data):
     return s
 
 def paste_templates(dst, day_numbers):
-    path = 'szablony/szablon_dnia.xlsx'
+    path = f'{templatepath}/szablon_dnia.xlsx'
     for n in day_numbers:
         shutil.copy(f'{path}', f'{dst}/{n}')
-        os.rename(f'{dst}/{n}/szablon_dnia.xlsx', f'{dst}/{n}/{n}.xlsx')
+        os.rename(f'{dname}/{dst}/{n}/szablon_dnia.xlsx', f'{dst}/{n}/{n}.xlsx')
 
 def generate(data):
     path = create_folder(data)
@@ -32,7 +34,7 @@ def generate(data):
     for i in data["day_numbers"]:
         d = create_day_obj(data['days'][i], i)
         if last:
-            d.incubation_start = last.stop - pd.Timedelta(minutes=15)
+            d.incubation_start = last.stop
         
         d.get_all_data()
         with xw.App(visible=False) as a:
