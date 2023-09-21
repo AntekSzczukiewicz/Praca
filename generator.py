@@ -1,11 +1,14 @@
 import pandas as pd
-import os, re, pickle, tkinter, openpyxl, shutil
+import os, re, pickle, tkinter, openpyxl, shutil, sys
 import xlwings as xw
 
 #ustawienie sciezki
-abspath = os.path.abspath(__file__)
-dname = os.path.dirname(abspath)
-os.chdir(dname)
+
+if getattr(sys, 'frozen', False):
+    dname = os.path.dirname(sys.executable)
+else:
+    dname = os.path.dirname(os.path.abspath(__file__))
+
 
 filepath = dname + '\pliki'
 
@@ -32,8 +35,11 @@ def alarms_dataframe():
     return pd.DataFrame()
 
 def incubation_import():
-    df = pd.read_csv(f'{filepath}/incubation.csv', sep=";", index_col=False, skiprows=1, encoding='latin')
-    df["Czas[YY-MM-DD hh:mm]"] = pd.to_datetime(df["Czas[YY-MM-DD hh:mm]"], format='mixed')
+    try:
+        df = pd.read_csv(f'{filepath}/incubation.csv', sep=";", index_col=False, skiprows=1, encoding='latin')
+        df["Time[YY-MM-DD hh:mm]"] = pd.to_datetime(df["Time[YY-MM-DD hh:mm]"], format='mixed')
+    except:
+        df = pd.DataFrame()
     return df
     
 
@@ -105,9 +111,9 @@ class Day:
     
     def get_i(self):
         if self.incubation_start:
-            self.i = self.incubation[(self.incubation["Czas[YY-MM-DD hh:mm]"] >= self.incubation_start) & (self.incubation["Czas[YY-MM-DD hh:mm]"] <= self.incubation_end)]
+            self.i = self.incubation[(self.incubation["Time[YY-MM-DD hh:mm]"] >= self.incubation_start) & (self.incubation["Time[YY-MM-DD hh:mm]"] <= self.incubation_end)]
             return self.i
-        return None
+        return pd.DataFrame()
 
     def get_chamber(self, K):
         return {"th" : self.get_th(K["th"]), "p" : self.get_p(K["p"])}
