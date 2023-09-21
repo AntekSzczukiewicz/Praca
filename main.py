@@ -80,6 +80,5 @@ D = import_all()
 CHAMBERS = D['Chambers']
 ALARMS = D['Alarms']
 INCUBATION = D['Incubation']
-print(INCUBATION)
 app = App(generate)
 app.mainloop()
