@@ -24,6 +24,7 @@ class App(tk.Tk):
         self.set_product_name()
         self.set_confirm_button()
         self.set_add_day_button()
+        self.set_incubation()
         self.days_grid.pack(side=tk.LEFT, padx=10, pady=10)
     
     def set_info_label(self):
@@ -47,6 +48,33 @@ class App(tk.Tk):
         self.product_name_field = tk.Entry(frame, width=40, font=("Arial", 12))
         self.product_name_field.pack(side=tk.RIGHT, padx=10)
         frame.pack(pady=10)
+
+    def set_incubation(self):
+        self.incubation_frame = tk.Frame(self)
+        frame = self.incubation_frame
+        frame.pack()
+
+        tk.Label(frame, text="Początek inkubacji: ").pack(side = tk.LEFT)
+
+        self.incubation_start_date = DateEntry(frame, date_pattern='dd-mm-yyyy')
+        self.incubation_start_date.pack(side = tk.LEFT)
+
+        self.incubation_start_h = tk.Spinbox(frame, from_=0, to=23, wrap=True, width=2)
+        self.incubation_start_h.pack(side = tk.LEFT)
+
+        self.incubation_start_m = tk.Spinbox(frame, from_=0, to=59, wrap=True, width=2)
+        self.incubation_start_m.pack(side = tk.LEFT)
+
+        tk.Label(frame, text="Koniec inkubacji: ").pack(side = tk.LEFT)
+
+        self.incubation_stop_date = DateEntry(frame, date_pattern='dd-mm-yyyy')
+        self.incubation_stop_date.pack(side = tk.LEFT)
+
+        self.incubation_stop_h = tk.Spinbox(frame, from_=0, to=23, wrap=True, width=2)
+        self.incubation_stop_h.pack(side = tk.LEFT)
+
+        self.incubation_stop_m = tk.Spinbox(frame, from_=0, to=59, wrap=True, width=2)
+        self.incubation_stop_m.pack(side = tk.LEFT)
 
     def set_day(self):
 
@@ -94,6 +122,29 @@ class App(tk.Tk):
         self.confirm_button = tk.Button(self, text="Dodaj dzień", command=self.set_day)
         self.confirm_button.pack(side=tk.BOTTOM, padx=10, pady=10)
 
+    def get_incubation(self):
+        DATA = {}
+
+        start_date = self.incubation_start_date.get_date()
+        DATA["start_Y"] = int(start_date.year)
+        DATA["start_M"] = int(start_date.month)
+        DATA["start_D"] = int(start_date.day)
+
+        stop_date = self.incubation_stop_date.get_date()
+        DATA["stop_Y"] = int(stop_date.year)
+        DATA["stop_M"] = int(stop_date.month)
+        DATA["stop_D"] = int(stop_date.day)
+
+        #godziny
+        DATA["start_h"] = int(self.incubation_start_h.get())
+        DATA["start_m"] = int(self.incubation_start_m.get())
+        DATA["stop_h"] = int(self.incubation_stop_h.get())
+        DATA["stop_m"] = int(self.incubation_stop_m.get())
+
+        return DATA
+
+
+
     def get_day(self, day):
         DATA = {}
         
@@ -126,12 +177,15 @@ class App(tk.Tk):
             data = self.get_day(day)
             self.DATA['days'][int(data['number'])] = data 
 
-        self.DATA["campain_name"] = self.title_field.get()
+        cn = self.title_field.get()
+        self.DATA["campain_name"] = cn if cn else "bez nazwy"
         self.DATA["product_name"] = self.product_name_field.get()
         
         day_nums = list(self.DATA["days"].keys())
         day_nums.sort()
         self.DATA['day_numbers'] = day_nums
+
+        self.DATA['incubation'] = self.get_incubation()
 
     def generate(self):
         self.get()

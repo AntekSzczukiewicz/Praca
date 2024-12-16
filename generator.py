@@ -12,16 +12,17 @@ else:
 
 filepath = dname + '\pliki'
 
-print(filepath)
-
 name_list = ["temperature", "humidity", "particle_5", "particle_0x5"]
 #wczytanie nazw plikow z folderu pliki
 filenames = os.listdir(filepath)
 
 #funkcja do wczytywania alarmow
 def alarms_import(path):
-    df = pd.read_csv(path, sep=";", index_col=False)
-    df = df[["TimeString", "Time_ms", "MsgNumber"]]
+    try: 
+        df = pd.read_csv(path, sep=";", index_col=False, on_bad_lines='skip')
+        df = df[["TimeString", "Time_ms", "MsgNumber"]]
+    except FileNotFoundError:
+        df = pd.DataFrame(columns=["TimeString", "Time_ms", "MsgNumber"])
     return df
 
 def alarms_dataframe():
@@ -32,21 +33,33 @@ def alarms_dataframe():
         df = pd.concat(dfs, axis=0)
         df["TimeString"] = pd.to_datetime(df["TimeString"], format=r"%d.%m.%Y %H:%M:%S")
         return df
-    return pd.DataFrame()
+    return pd.DataFrame(columns=["TimeString", "Time_ms", "MsgNumber"])
 
-def incubation_import():
+def incubation_import(path):
     try:
-        df = pd.read_csv(f'{filepath}/incubation.csv', sep=";", index_col=False, skiprows=1, encoding='latin')
-        df["Time[YY-MM-DD hh:mm]"] = pd.to_datetime(df["Time[YY-MM-DD hh:mm]"], format='mixed')
-    except:
-        df = pd.DataFrame()
+        df = pd.read_csv(path, sep=";", index_col=False, skiprows=1, on_bad_lines='skip', encoding='unicode_escape')
+        df = df.rename(columns={df.columns[0]: "Czas[YY-MM-DD hh:mm]", df.columns[1]: "PT1", df.columns[2]: "CO2"})
+    except FileNotFoundError:
+        df = pd.DataFrame(columns = ["Czas[YY-MM-DD hh:mm]", "PT1", "CO2"])
     return df
-    
+
+def incubation_dataframe():
+    pattern = re.compile(f"^inkubacja")
+    names = [name for name in filenames if pattern.match(name)]
+    dfs = [incubation_import(path = f"{filepath}/{name}") for name in names]
+    if dfs:
+        df = pd.concat(dfs, axis=0)
+        df["Czas[YY-MM-DD hh:mm]"] = pd.to_datetime(df["Czas[YY-MM-DD hh:mm]"], format=r"%Y-%m-%d %H:%M:%S")
+        return df
+    return pd.DataFrame(columns = ["Czas[YY-MM-DD hh:mm]", "PT1", "CO2"])
 
 #funkcja do importowania temperatury wilgotnosci i czastek
 def data_import(path):
-    df = pd.read_csv(path, sep=";", nrows=50000, index_col=False) ### USTAWIC NA 50000 ###
-    df = df[["TimeString", "Time_ms", "VarValue"]]
+    try:
+        df = pd.read_csv(path, sep=";", index_col=False, on_bad_lines='skip')
+        df = df[["TimeString", "Time_ms", "VarValue"]]
+    except FileNotFoundError:
+        df = pd.DataFrame(columns=["TimeString", "Time_ms", "VarValue"])
     return df
 
 def get_dataframe(komora, data_type):
@@ -56,20 +69,24 @@ def get_dataframe(komora, data_type):
     if dfs:
         df = pd.concat(dfs, axis=0)
         return df
-    return pd.DataFrame()
+    return pd.DataFrame(columns=["TimeString", "Time_ms", "VarValue"])
 
 def import_chamber(number):
     D = {}
-    for n in name_list:
-        D[n] = get_dataframe(number, n)
+    for name in name_list:
+        D[name] = get_dataframe(number, name)
+    
+    if len(D[name]) > 0:
+        th = pd.merge(D["temperature"], D["humidity"], on=["TimeString"], how="inner")
+        th = th.rename(columns={"VarValue_x" : "Temperature", "VarValue_y" : "Humidity", "Time_ms_x" : "Time_ms"})
+        th = th.drop("Time_ms_y", axis=1)
 
-    th = pd.merge(D["temperature"], D["humidity"], on=["TimeString"], how="inner")
-    th = th.rename(columns={"VarValue_x" : "Temperature", "VarValue_y" : "Humidity", "Time_ms_x" : "Time_ms"})
-    th = th.drop("Time_ms_y", axis=1)
-
-    p = pd.merge(D["particle_5"], D["particle_0x5"], on=["TimeString"], how="inner")
-    p = p.rename(columns={"VarValue_x" : "particle_5", "VarValue_y" : "particle_0x5", "Time_ms_x" : "Time_ms"})
-    p = p.drop("Time_ms_y", axis=1)
+        p = pd.merge(D["particle_5"], D["particle_0x5"], on=["TimeString"], how="inner")
+        p = p.rename(columns={"VarValue_x" : "particle_5", "VarValue_y" : "particle_0x5", "Time_ms_x" : "Time_ms"})
+        p = p.drop("Time_ms_y", axis=1)
+    else:
+        th = pd.DataFrame(columns=["TimeString", "Time_ms", "Temperature", "Humidity"])
+        p = pd.DataFrame(columns=["TimeString", "Time_ms", "particle_5", "particle_0x5"])
 
     th["TimeString"] = pd.to_datetime(th["TimeString"], format=r"%d.%m.%Y %H:%M:%S")
     p["TimeString"] = pd.to_datetime(p["TimeString"], format=r"%d.%m.%Y %H:%M:%S")
@@ -85,35 +102,36 @@ class Day:
         self.number = number
         self.start = start
         self.stop = stop
-        self.incubation_end = self.start
+        self.do_incubation = False
         self.incubation_start = None
+        self.incubation_stop = None
         self.active_chambers = active_chambers
         self.K = {}
         #self.get_all_data()
         #self.analyze()
 
     def get_th(self, df):
-        self.th = df[(df["TimeString"] >= self.start - pd.Timedelta(minutes=15)) & (df["TimeString"] <= self.stop + pd.Timedelta(minutes=15))]
+        self.th = df[(df["TimeString"] >= self.start) & (df["TimeString"] <= self.stop)]
         self.th.loc[:, "Temperature"] = self.th["Temperature"].apply(lambda x : float(x.replace(",", ".")))
         self.th.loc[:, "Humidity"] = self.th["Humidity"].apply(lambda x : float(x.replace(",", ".")))
         self.th.loc[:, "Time_ms"] = self.th["Time_ms"].apply(lambda x : float(x.replace(",", ".")))
         return self.th
 
     def get_p(self, df):
-        self.p = df[(df["TimeString"] >= self.start - pd.Timedelta(minutes=15)) & (df["TimeString"] <= self.stop + pd.Timedelta(minutes=15))]
+        self.p = df[(df["TimeString"] >= self.start) & (df["TimeString"] <= self.stop)]
         self.p.loc[:, "Time_ms"] = self.p["Time_ms"].apply(lambda x : float(x.replace(",", ".")))
         return self.p
     
     def get_a(self):
-        self.a = self.alarms[(self.alarms["TimeString"] >= self.start - pd.Timedelta(minutes=15)) & (self.alarms["TimeString"] <= self.stop + pd.Timedelta(minutes=15))]
+        self.a = self.alarms[(self.alarms["TimeString"] >= self.start) & (self.alarms["TimeString"] <= self.stop)]
         self.a.loc[:, "Time_ms"] = self.a["Time_ms"].apply(lambda x : float(x.replace(",", ".")))
         return self.a
     
     def get_i(self):
-        if self.incubation_start:
-            self.i = self.incubation[(self.incubation["Time[YY-MM-DD hh:mm]"] >= self.incubation_start) & (self.incubation["Time[YY-MM-DD hh:mm]"] <= self.incubation_end)]
+        if self.do_incubation:
+            self.i = self.incubation[(self.incubation["Czas[YY-MM-DD hh:mm]"] >= self.incubation_start) & (self.incubation["Czas[YY-MM-DD hh:mm]"] <= self.incubation_stop)]
             return self.i
-        return pd.DataFrame()
+        return None
 
     def get_chamber(self, K):
         return {"th" : self.get_th(K["th"]), "p" : self.get_p(K["p"])}
@@ -224,5 +242,5 @@ def import_all():
     print('    ALARMY')
     A = alarms_dataframe()
     print('    INKUBACJA')
-    I = incubation_import()
+    I = incubation_dataframe()
     return {'Chambers' : C, 'Alarms': A, 'Incubation' : I}

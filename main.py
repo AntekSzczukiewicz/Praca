@@ -15,8 +15,13 @@ def create_day_obj(data, n):
     Y = data["Y"]
     m = data["m"]
     d = data["d"]
-    d = Day(pd.Timestamp(Y, m, d, data["start_h"], data["start_m"]), pd.Timestamp(Y, m, d, data["stop_h"], data["stop_m"]), data["chambers"], CHAMBERS, ALARMS, INCUBATION, number=n)
+
+    d = Day(pd.Timestamp(Y, m, d, data["start_h"], data["start_m"]), 
+            pd.Timestamp(Y, m, d, data["stop_h"], data["stop_m"]), 
+            data["chambers"], CHAMBERS, ALARMS, 
+            INCUBATION, number=n)
     return d
+
 def create_folder(data):
     s = data["campain_name"]
     s = s.replace('/', '-')
@@ -26,11 +31,13 @@ def create_folder(data):
     os.mkdir(s)
     [os.mkdir(s + f'\{i}') for i in data["day_numbers"]]
     return s
+
 def paste_templates(dst, day_numbers):
     path = f'{templatepath}/szablon_dnia.xlsx'
     for n in day_numbers:
         shutil.copy(f'{path}', f'{dst}/{n}')
         os.rename(f'{dname}/{dst}/{n}/szablon_dnia.xlsx', f'{dst}/{n}/{n}.xlsx')
+
 def generate(data):
     path = create_folder(data)
     paste_templates(path, data['day_numbers'])
@@ -38,25 +45,29 @@ def generate(data):
     last = None
     for i in data["day_numbers"]:
         d = create_day_obj(data['days'][i], i)
-        if last:
-            d.incubation_start = last.stop
+        if i == max(data["day_numbers"]):
+            d_i = data['incubation']
+            incubation_start = pd.Timestamp(d_i['start_Y'], d_i['start_M'], d_i['start_D'], d_i['start_h'], d_i['start_m'])
+            incubation_stop = pd.Timestamp(d_i['stop_Y'], d_i['stop_M'], d_i['stop_D'], d_i['stop_h'], d_i['stop_m'])
+            d.do_incubation = True
+            d.incubation_start = incubation_start
+            d.incubation_stop = incubation_stop
         
         d.get_all_data()
         with xw.App(visible=False) as app:
             wb = app.books.open(f'{path}/{d.number}/{d.number}.xlsx')
             print(f'    DZIEN {i}')
             a = d.K['a']
-            if not a.empty:
-                a = a.rename(columns={'MsgNumber' : 'Nr alarmu'})
-                write_data(a, wb, f'ALARMY', data['campain_name'], data_cell="A2", campain_field='D1')
-            
-            i = d.K['i']
-            if not i.empty:
-                i = i.rename(columns={i.columns.values[0] : 'Data i godzina', i.columns.values[1] : 'Temp', i.columns.values[2] : 'CO2'})
+            a = a.rename(columns={'MsgNumber' : 'Nr alarmu'})
+            write_data(a, wb, f'ALARMY', data['campain_name'], data_cell="A2", campain_field='D1')
+
+            if d.do_incubation:
+                inc = d.K['i']
+                inc = inc.rename(columns={inc.columns.values[0] : 'Data i godzina', inc.columns.values[1] : 'Temp', inc.columns.values[2] : 'CO2'})
             #    i.columns.values[0] = 'Data i godzina'
             #    i.columns.values[1] = 'Temp'
             #    i.columns.values[2] = 'CO2'
-                write_data(i, wb, f'INKUBACJA', data['campain_name'], data_cell="A3", campain_field='C1')
+                write_data(inc, wb, f'INKUBACJA', data['campain_name'], data_cell="A3", campain_field='C1')
             for k in d.active_chambers:
                 print(f'        KOMORA {k}')
                 th = d.K[k]['th']
